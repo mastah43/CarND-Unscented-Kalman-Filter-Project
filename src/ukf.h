@@ -62,7 +62,7 @@ public:
   int n_x_;
 
   ///* Augmented state dimension
-  int n_aug_;
+  static int n_aug_;
 
   ///* Sigma point spreading parameter
   double lambda_;
@@ -80,9 +80,9 @@ public:
 
   /**
    * ProcessMeasurement
-   * @param meas_package The latest measurement data of either radar or laser
+   * @param measurementPackage The latest measurement data of either radar or laser
    */
-  void ProcessMeasurement(MeasurementPackage meas_package);
+  void ProcessMeasurement(MeasurementPackage measurementPackage);
 
   /**
    * Prediction Predicts sigma points, the state, and the state covariance
@@ -102,6 +102,52 @@ public:
    * @param meas_package The measurement at k+1
    */
   void UpdateRadar(MeasurementPackage meas_package);
+
+private:
+  /**
+   * Initialize the kalman filter with the first measurement.
+   * @param measurementPackage first measurement. could be from lidar or radar.
+   */
+  void Init(MeasurementPackage measurementPackage);
+
+  /**
+   * Generate sigma points for the unscented kalman filter into the given matrix.
+   * @param Xsig_out
+   */
+  void GenerateSigmaPoints(MatrixXd* Xsig_out);
+
+  /**
+   * Generate sigma points for the unscented kalman filter into the given matrix
+   * including process noise sigma points.
+   * @param Xsig_out
+   */
+  void AugmentedSigmaPoints(MatrixXd* Xsig_out);
+
+  /**
+   * Predict sigma points.
+   * @param Xsig_aug augmented sigma points as input for prediction
+   * @param Xsig_out predicted sigma points output
+   * @param dt time delta in seconds.
+   */
+  void SigmaPointPrediction(MatrixXd Xsig_aug, MatrixXd *Xsig_out, double dt);
+
+  // TODO document
+  void PredictMeanAndCovariance(MatrixXd Xsig_pred, VectorXd* z_out, MatrixXd* S_out);
+
+  // TODO document
+  /**
+   *
+   * @param Xsig_pred
+   * @param z_out
+   * @param S_out
+   */
+  void PredictRadarMeasurement(MatrixXd Xsig_pred, VectorXd* z_out, MatrixXd* S_out);
+
+  /**
+   * time in seconds of the last measurement
+   */
+  double previous_timestamp_;
+
 };
 
 #endif /* UKF_H */
