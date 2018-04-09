@@ -4,6 +4,9 @@
 using Eigen::VectorXd;
 using Eigen::MatrixXd;
 using std::vector;
+using std::cout;
+using std::cerr;
+using std::endl;
 
 Tools::Tools() {}
 
@@ -17,12 +20,11 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
   // check the validity of the following inputs:
   //  * the estimation vector size should not be zero
   //  * the estimation vector size should equal ground truth vector size
-  if (estimations.size() == 0) {
+  if (estimations.empty()) {
     cerr << "Estimations are empty" << endl;
     return rmse;
   }
-  if(estimations.size() != ground_truth.size()
-     || estimations.size() == 0){
+  if(estimations.size() != ground_truth.size()){
     cerr << "Invalid estimation or ground_truth data" << endl;
     return rmse;
   }
