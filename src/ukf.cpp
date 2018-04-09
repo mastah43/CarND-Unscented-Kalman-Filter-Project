@@ -15,7 +15,7 @@ using std::endl;
  */
 UKF::UKF() {
   // if this is false, laser measurements will be ignored (except during init)
-  use_laser_ = true;
+  use_laser_ = false; // TODO implement lidar update
 
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = true;
@@ -104,6 +104,8 @@ UKF::UKF() {
 UKF::~UKF() {}
 
 void UKF::Init(MeasurementPackage measurementPackage) {
+  cout << "# initializing ukf" << endl;
+
   // x is [pos1 pos2 vel_abs yaw_angle yaw_rate] in SI units and rad
   if (measurementPackage.sensor_type_ == MeasurementPackage::RADAR) {
     // Initialization with radar can be done for position and velocity.
@@ -193,17 +195,17 @@ void UKF::Prediction(double delta_t) {
   vector, x_. Predict sigma points, the state, and the state covariance matrix.
   */
 
+  cout << "# predicting state after " << delta_t << "ms" << endl;
+
   // TODO MatrixXd Xsig_points = MatrixXd(n_x_, 2 * n_x_ + 1); // TODO is matrix creation or do I just need a pointer
   MatrixXd Xsig_points_aug = MatrixXd(n_x_, n_sig_points_); // TODO is matrix creation or do I just need a pointer
   //GenerateSigmaPoints(&Xsig_points); // TODO not needed if AugmentedSigmaPoints is used
   AugmentedSigmaPoints(&Xsig_points_aug);
   SigmaPointPrediction(Xsig_points_aug, &Xsig_pred_, delta_t);
-
   PredictMeanAndCovariance(Xsig_pred_, &x_, &P_);
 
   // print the output
   // P should converge to small values (since uncertainty should reduce over time)
-  cout << "result of prediction after " << delta_t << " secs:" << endl;
   cout << "x_ = " << x_ << endl;
   cout << "P_ = " << P_ << endl;
 }
@@ -225,6 +227,12 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   //H_ = H_laser_;
   //R_ = R_laser_;
 
+
+  cout << "# updating from lidar measurement" << endl;
+
+  //set measurement dimension, lidar can measure px, py
+  int n_z = 2;
+
 }
 
 /**
@@ -234,6 +242,8 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
  */
 void UKF::UpdateRadar(MeasurementPackage measurementPackage) {
   // TODO You'll also need to calculate the radar NIS.
+
+  cout << "# updating from radar measurement" << endl;
 
   //set measurement dimension, radar can measure r, phi, and r_dot
   int n_z = 3;
@@ -287,8 +297,9 @@ void UKF::UpdateRadar(MeasurementPackage measurementPackage) {
   P_ = P_ - K * S * K.transpose();
 
   //print result
-  std::cout << "Updated state x: " << std::endl << x_ << std::endl;
-  std::cout << "Updated state covariance P: " << std::endl << P_ << std::endl;
+  cout << "# predict radar measurement" << endl;
+  cout << "Updated state x: " << endl << x_ << endl;
+  cout << "Updated state covariance P: " << endl << P_ << endl;
 }
 
 void UKF::GenerateSigmaPoints(MatrixXd *Xsig_out) {
@@ -429,6 +440,8 @@ void UKF::PredictMeanAndCovariance(MatrixXd Xsig_pred, VectorXd *x_out, MatrixXd
 
 void UKF::PredictRadarMeasurement(MatrixXd *Zsig_out, VectorXd *z_out, MatrixXd *S_out) {
 
+  cout << "# predict radar measurement" << endl;
+
   //set measurement dimension, radar can measure r, phi, and r_dot
   int n_z = 3;
 
@@ -457,7 +470,7 @@ void UKF::PredictRadarMeasurement(MatrixXd *Zsig_out, VectorXd *z_out, MatrixXd 
   }
 
   // mean predicted measurement
-  // TODO extract method for creating
+  // TODO extract method for creating weighted predictions
   VectorXd z_pred = VectorXd(n_z);
   z_pred.fill(0.0);
   for (int i = 0; i < n_sig_points_; i++) {
@@ -486,7 +499,6 @@ void UKF::PredictRadarMeasurement(MatrixXd *Zsig_out, VectorXd *z_out, MatrixXd 
   S = S + R;
 
   //print result
-  cout << "predicted radar measurement:" << endl;
   cout << "z_pred: " << endl << z_pred << endl;
   cout << "S: " << endl << S << endl;
 
