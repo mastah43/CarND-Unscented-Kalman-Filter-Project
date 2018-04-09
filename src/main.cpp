@@ -103,7 +103,8 @@ int main() {
           gt_values(3) = vy_gt;
           ground_truth.push_back(gt_values);
 
-          cout << "### process measurement with ground truth: " << gt_values << endl;
+          cout << "### process measurement with ground truth: px=" << x_gt << ", py=" << y_gt
+               << ", vx=" << vx_gt << ", vy=" << vy_gt << endl;
 
           //Call ProcessMeasurment(meas_package) for Kalman filter
           ukf.ProcessMeasurement(meas_package);
