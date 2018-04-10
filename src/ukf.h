@@ -137,12 +137,6 @@ private:
   void Init(MeasurementPackage measurementPackage);
 
   /**
-   * Generate sigma points for the unscented kalman filter into the given matrix.
-   * @param Xsig_out
-   */
-  void GenerateSigmaPoints(MatrixXd* Xsig_out);
-
-  /**
    * Generate sigma points for the unscented kalman filter into the given matrix
    * including process noise sigma points.
    * @param Xsig_out
@@ -169,6 +163,13 @@ private:
    * time in seconds of the last measurement
    */
   double previous_timestamp_;
+
+  /**
+   * Normalizes an angle in radians for range -PI to PI.
+   * @param rad angle unnormalized
+   * @return angle normalized
+   */
+  double NormalizeAngle(double rad);
 
 };
 

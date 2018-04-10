@@ -10,6 +10,7 @@ using std::cerr;
 using std::endl;
 
 #define EPS 0.001
+#define COUT if (0) cout
 
 /**
  * Initializes Unscented Kalman filter
@@ -55,8 +56,6 @@ UKF::UKF() {
   // Standard deviation (not squared) should be half of maximum expected acceleration.
   // The actual values must be in 95% of all cases below abs(2*std_a_) for a gaussian distribution
   // which should be fulfilled since 2*std_a_ is the maximum acceleration to be expected for a bicycle.
-  // TODO But maybe we over estimate the uncertainty for bicycle acceleration.
-  // TODO should be tuned using NIS results
   std_a_ = 3;
 
   // Process noise standard deviation yaw acceleration in rad/s^2.
@@ -68,7 +67,6 @@ UKF::UKF() {
   // If the angular acceleration were now -PI/8 rad instead of zero
   // then in 2 seconds the biker would go in a circle of the opposite direction.
   // Standard deviation (not squared) should be half of maximum expected acceleration.
-  // TODO should be tuned using NIS results
   std_yawdd_ = M_PI / 16.;
 
   //DO NOT MODIFY measurement noise values below these are provided by the sensor manufacturer.
@@ -114,7 +112,7 @@ UKF::UKF() {
 UKF::~UKF() {}
 
 void UKF::Init(MeasurementPackage measurementPackage) {
-  cout << "# initializing ukf" << endl;
+  COUT << "# initializing ukf" << endl;
 
   // x is [pos1 pos2 vel_abs yaw_angle yaw_rate] in SI units and rad
   if (measurementPackage.sensor_type_ == MeasurementPackage::RADAR) {
@@ -127,10 +125,7 @@ void UKF::Init(MeasurementPackage measurementPackage) {
     double py = range * sin(angle);
     double vx = rangeRate * cos(angle);
     double vy = rangeRate * sin(angle);
-    // TODO compute velocity in x direction of target object coordinate system
-    // TODO how to tell in which direction the object is targeting
-
-    double v = 0; // TODO
+    double v  = sqrt(vx * vx + vy * vy);
     double yaw_rate = 0; // unknown
     double yaw_rate_acceleration = 0; // unknown
     x_ << px, py, v, yaw_rate, yaw_rate_acceleration;
@@ -156,6 +151,12 @@ void UKF::Init(MeasurementPackage measurementPackage) {
   is_initialized_ = true;
 }
 
+double UKF::NormalizeAngle(double rad) {
+  while (rad > M_PI) rad -= 2. * M_PI;
+  while (rad < -M_PI) rad += 2. * M_PI;
+  return rad;
+}
+
 /**
  * @param {MeasurementPackage} meas_package The latest measurement data of
  * either radar or laser.
@@ -176,19 +177,19 @@ void UKF::ProcessMeasurement(MeasurementPackage measurementPackage) {
     // Update the state and covariance matrices.
     if (measurementPackage.sensor_type_ == MeasurementPackage::RADAR) {
       // Radar updates
-      //cout << "radar measurement" << endl;
+      //COUT << "radar measurement" << endl;
       UpdateRadar(measurementPackage);
     } else {
       // Laser updates
-      //cout << "lidar measurement" << endl;
+      //COUT << "lidar measurement" << endl;
       UpdateLidar(measurementPackage);
     }
   }
 
   // print the output
   // P should converge to small values (since uncertainty should reduce over time)
-  cout << "x_ = " << x_ << endl;
-  cout << "P_ = " << P_ << endl;
+  COUT << "x_ = " << x_ << endl;
+  COUT << "P_ = " << P_ << endl;
 }
 
 /**
@@ -197,26 +198,17 @@ void UKF::ProcessMeasurement(MeasurementPackage measurementPackage) {
  * measurement and this one.
  */
 void UKF::Prediction(double delta_t) {
-  /**
-  TODO:
+  COUT << "## predicting state after " << delta_t << "ms" << endl;
 
-  Complete this function! Estimate the object's location. Modify the state
-  vector, x_. Predict sigma points, the state, and the state covariance matrix.
-  */
-
-  cout << "## predicting state after " << delta_t << "ms" << endl;
-
-  // TODO MatrixXd Xsig_points = MatrixXd(n_x_, 2 * n_x_ + 1); // TODO is matrix creation or do I just need a pointer
-  MatrixXd Xsig_points_aug = MatrixXd(n_x_, n_sig_points_); // TODO is matrix creation or do I just need a pointer
-  //GenerateSigmaPoints(&Xsig_points); // TODO not needed if AugmentedSigmaPoints is used
+  MatrixXd Xsig_points_aug = MatrixXd(n_x_, n_sig_points_);
   AugmentedSigmaPoints(&Xsig_points_aug);
   SigmaPointPrediction(Xsig_points_aug, &Xsig_pred_, delta_t);
   PredictMeanAndCovariance(Xsig_pred_, &x_, &P_);
 
   // print the output
   // P should converge to small values (since uncertainty should reduce over time)
-  cout << "x_ = " << x_ << endl;
-  cout << "P_ = " << P_ << endl;
+  COUT << "x_ = " << x_ << endl;
+  COUT << "P_ = " << P_ << endl;
 }
 
 /**
@@ -224,7 +216,7 @@ void UKF::Prediction(double delta_t) {
  * @param {MeasurementPackage} meas_package
  */
 void UKF::UpdateLidar(MeasurementPackage measurementPackage) {
-  cout << "## updating from lidar measurement" << endl;
+  COUT << "## updating from lidar measurement" << endl;
 
   //set measurement dimension - lidar can measure px, py
   int n_z = 2;
@@ -250,7 +242,7 @@ void UKF::UpdateLidar(MeasurementPackage measurementPackage) {
  * @param {MeasurementPackage} measurementPackage
  */
 void UKF::UpdateRadar(MeasurementPackage measurementPackage) {
-  cout << "## updating from radar measurement" << endl;
+  COUT << "## updating from radar measurement" << endl;
 
   //set measurement dimension - radar can measure r, phi, and r_dot
   int n_z = 3;
@@ -269,10 +261,8 @@ void UKF::UpdateRadar(MeasurementPackage measurementPackage) {
     double v1 = cos(yaw) * v;
     double v2 = sin(yaw) * v;
 
-    // TODO use Zsig.col(i) =
     double range = sqrt(px * px + py * py); // r
-    double angle_rad = atan2(py, px); // phi
-    // TODO angle normalization?
+    double angle_rad = atan2(py, px); // phi, angle normalization not needed since this is done for z diff later
     double range_velocity = (px * v1 + py * v2) / sqrt(px * px + py * py); //r_dot
 
     Zsig(0, i) = range;
@@ -285,7 +275,7 @@ void UKF::UpdateRadar(MeasurementPackage measurementPackage) {
 
 MatrixXd UKF::UpdateUKF(MeasurementPackage measurementPackage, int n_z, MatrixXd Zsig, MatrixXd R) {
 
-  cout << "# update uk" << endl;
+  COUT << "# update uk" << endl;
 
   // mean of measurement
   VectorXd z_pred = VectorXd(n_z);
@@ -297,10 +287,7 @@ MatrixXd UKF::UpdateUKF(MeasurementPackage measurementPackage, int n_z, MatrixXd
   for (int i = 0; i < n_sig_points_; i++) {
     //residual
     VectorXd z_diff = Zsig.col(i) - z_pred;
-
-    //angle normalization
-    while (z_diff(1) > M_PI) z_diff(1) -= 2. * M_PI;
-    while (z_diff(1) < -M_PI) z_diff(1) += 2. * M_PI;
+    z_diff(1) = NormalizeAngle(z_diff(1));
 
     S = S + weights_(i) * z_diff * z_diff.transpose();
   }
@@ -309,8 +296,8 @@ MatrixXd UKF::UpdateUKF(MeasurementPackage measurementPackage, int n_z, MatrixXd
   S = S + R;
 
   //print result
-  cout << "z_pred: " << endl << z_pred << endl;
-  cout << "S: " << endl << S << endl;
+  COUT << "z_pred: " << endl << z_pred << endl;
+  COUT << "S: " << endl << S << endl;
 
   //calculate cross correlation matrix
   MatrixXd Tc = MatrixXd(n_x_, n_z);
@@ -319,16 +306,11 @@ MatrixXd UKF::UpdateUKF(MeasurementPackage measurementPackage, int n_z, MatrixXd
 
     //residual
     VectorXd z_diff = Zsig.col(i) - z_pred;
-    //angle normalization
-    // TODO extract function for all angle normalization
-    while (z_diff(1) > M_PI) z_diff(1) -= 2. * M_PI;
-    while (z_diff(1) < -M_PI) z_diff(1) += 2. * M_PI;
+    z_diff(1) = NormalizeAngle(z_diff(1));
 
     // state difference
     VectorXd x_diff = Xsig_pred_.col(i) - x_;
-    //angle normalization
-    while (x_diff(3) > M_PI) x_diff(3) -= 2. * M_PI;
-    while (x_diff(3) < -M_PI) x_diff(3) += 2. * M_PI;
+    x_diff(3) = NormalizeAngle(x_diff(3));
 
     Tc = Tc + weights_(i) * x_diff * z_diff.transpose();
   }
@@ -339,40 +321,22 @@ MatrixXd UKF::UpdateUKF(MeasurementPackage measurementPackage, int n_z, MatrixXd
   //residual
   VectorXd z = measurementPackage.raw_measurements_;
   VectorXd z_diff = z - z_pred;
-
-  //angle normalization
-  while (z_diff(1) > M_PI) z_diff(1) -= 2. * M_PI;
-  while (z_diff(1) < -M_PI) z_diff(1) += 2. * M_PI;
+  z_diff(1) = NormalizeAngle(z_diff(1));
 
   //update state mean and covariance matrix
   x_ = x_ + K * z_diff;
   P_ = P_ - K * S * K.transpose();
 
   //print result
-  cout << "# updated state using ukf:" << endl;
-  cout << "Updated state x: " << endl << x_ << endl;
-  cout << "Updated state covariance P: " << endl << P_ << endl;
+  COUT << "# updated state using ukf:" << endl;
+  COUT << "Updated state x: " << endl << x_ << endl;
+  COUT << "Updated state covariance P: " << endl << P_ << endl;
 
   MatrixXd nis = z.transpose() * S.inverse() * z;
   return nis;
 }
 
-void UKF::GenerateSigmaPoints(MatrixXd *Xsig_out) {
-  MatrixXd Xsig = MatrixXd(n_x_, 2 * n_x_ + 1);
-  MatrixXd A = P_.llt().matrixL();
-  double d = sqrt(lambda_ + n_x_);
-  for (int i = 0; i < n_x_; i++) {
-    MatrixXd dA = d * A.col(i);
-    Xsig.col(i + 1) = x_ + dA;
-    Xsig.col(i + 1 + n_x_) = x_ - dA;
-  }
-
-  //write result
-  *Xsig_out = Xsig;
-}
-
 void UKF::AugmentedSigmaPoints(MatrixXd *Xsig_out) {
-  // TODO adopt function taken from course material
   //create augmented mean vector
   VectorXd x_aug = VectorXd(n_aug_);
 
