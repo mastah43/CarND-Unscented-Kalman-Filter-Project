@@ -20,7 +20,7 @@ UKF::UKF() {
   is_initialized_ = false;
 
   // if this is false, laser measurements will be ignored (except during init)
-  use_laser_ = false; // TODO implement lidar update
+  use_laser_ = true;
 
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = true;
@@ -223,25 +223,25 @@ void UKF::Prediction(double delta_t) {
  * Updates the state and the state covariance matrix using a laser measurement.
  * @param {MeasurementPackage} meas_package
  */
-void UKF::UpdateLidar(MeasurementPackage meas_package) {
-  /**
-  TODO:
-
-  Complete this function! Use lidar data to update the belief about the object's
-  position. Modify the state vector, x_, and covariance, P_.
-
-  You'll also need to calculate the lidar NIS.
-  */
-// TODO
-  //H_ = H_laser_;
-  //R_ = R_laser_;
-
-
+void UKF::UpdateLidar(MeasurementPackage measurementPackage) {
   cout << "## updating from lidar measurement" << endl;
 
-  //set measurement dimension, lidar can measure px, py
+  //set measurement dimension - lidar can measure px, py
   int n_z = 2;
 
+  // Create matrix for sigma points in measurement space.
+  // Simply use sigma points of last prediction.
+  // Transform sigma points from state space into measurement space
+  MatrixXd Zsig = MatrixXd(n_z, n_sig_points_);
+  for (int i = 0; i < n_sig_points_; i++) {
+    // extract values for better readability
+    double px = Xsig_pred_(0, i);
+    double py = Xsig_pred_(1, i);
+    Zsig(0, i) = px;
+    Zsig(1, i) = py;
+  }
+
+  NIS_lidar_ = UpdateUKF(measurementPackage, n_z, Zsig, R_lidar_);
 }
 
 /**
@@ -252,7 +252,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 void UKF::UpdateRadar(MeasurementPackage measurementPackage) {
   cout << "## updating from radar measurement" << endl;
 
-  //set measurement dimension, radar can measure r, phi, and r_dot
+  //set measurement dimension - radar can measure r, phi, and r_dot
   int n_z = 3;
 
   // Create matrix for sigma points in measurement space.
@@ -280,8 +280,7 @@ void UKF::UpdateRadar(MeasurementPackage measurementPackage) {
     Zsig(2, i) = range_velocity;
   }
 
-  UpdateUKF(measurementPackage, n_z, Zsig, R_radar_);
-  // TODO store result as NIS_radar_ and output on console
+  NIS_radar_ = UpdateUKF(measurementPackage, n_z, Zsig, R_radar_);
 }
 
 MatrixXd UKF::UpdateUKF(MeasurementPackage measurementPackage, int n_z, MatrixXd Zsig, MatrixXd R) {

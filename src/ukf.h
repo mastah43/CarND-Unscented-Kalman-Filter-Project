@@ -19,6 +19,12 @@ public:
   ///* state covariance matrix
   MatrixXd P_;
 
+  ///* NIS of radar
+  MatrixXd NIS_radar_;
+
+  ///* NIS of radar
+  MatrixXd NIS_lidar_;
+
   /**
    * Constructor
    */
