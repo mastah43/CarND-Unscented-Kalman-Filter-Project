@@ -89,6 +89,12 @@ private:
   ///* Sigma point spreading parameter
   double lambda_;
 
+  ///* radar measurement noise covariance matrix
+  MatrixXd R_radar_;
+
+  ///* lidar measurement noise covariance matrix
+  MatrixXd R_lidar_;
+
   /**
    * Prediction Predicts sigma points, the state, and the state covariance
    * matrix
@@ -107,6 +113,16 @@ private:
    * @param measurementPackage The measurement at k+1
    */
   void UpdateRadar(MeasurementPackage measurementPackage);
+
+  /**
+   * Updates the state and covariance matrix from the given measurement.
+   *
+   * @param measurementPackage measurement
+   * @param n_z dimensions in measurement space
+   * @param Zsig sigma points from measurement
+   * @param R measurement noise covariance matrix
+   */
+  MatrixXd UpdateUKF(MeasurementPackage measurementPackage, int n_z, MatrixXd Zsig, MatrixXd R);
 
   /**
    * Initialize the kalman filter with the first measurement.
@@ -143,20 +159,10 @@ private:
    */
   void PredictMeanAndCovariance(MatrixXd Xsig_pred, VectorXd* z_out, MatrixXd* S_out);
 
-  // TODO document
-  /**
-   *
-   * @param Xsig_pred
-   * @param z_out
-   * @param S_out
-   */
-  void PredictRadarMeasurement(MatrixXd *Zsig_out, VectorXd* z_out, MatrixXd* S_out);
-
   /**
    * time in seconds of the last measurement
    */
   double previous_timestamp_;
-
 
 };
 

@@ -36,8 +36,9 @@ int main() {
   vector<VectorXd> estimations;
   vector<VectorXd> ground_truth;
 
-  h.onMessage([&ukf, &tools, &estimations, &ground_truth](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
-                                                          uWS::OpCode opCode) {
+  int n_measurements = 0;
+  h.onMessage([&ukf, &tools, &estimations, &ground_truth, &n_measurements]
+              (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -103,7 +104,7 @@ int main() {
           gt_values(3) = vy_gt;
           ground_truth.push_back(gt_values);
 
-          cout << "### process measurement with ground truth: px=" << x_gt << ", py=" << y_gt
+          cout << "### process measurement " << n_measurements++ << " with ground truth: px=" << x_gt << ", py=" << y_gt
                << ", vx=" << vx_gt << ", vy=" << vy_gt << endl;
 
           //Call ProcessMeasurment(meas_package) for Kalman filter
